@@ -18,13 +18,15 @@ pub fn render(app: &mut AppState, frame: &mut Frame) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3),
+            Constraint::Length(1),
             Constraint::Min(10),
             Constraint::Length(1),
         ])
         .split(frame.area());
 
     render_header(app, frame, main[0]);
-    render_footer(frame, main[2]);
+    render_status(app, frame, main[1]);
+    render_footer(frame, main[3]);
 
     if app.show_stats {
         let body = Layout::default()
@@ -37,7 +39,7 @@ pub fn render(app: &mut AppState, frame: &mut Frame) {
         render_chart(app, frame, body[0]);
         render_stats(app, frame, body[1]);
     } else {
-        render_chart(app, frame, main[1]);
+        render_chart(app, frame, main[2]);
     }
 }
 
@@ -110,6 +112,55 @@ fn render_header(app: &AppState, frame: &mut Frame, area: Rect) {
     );
 
     frame.render_widget(header, area);
+}
+
+fn render_status(app: &AppState, frame: &mut Frame, area: Rect) {
+    let cond = app.network_condition();
+
+    let total_count: u64 = app.hosts.iter().map(|h| h.count).sum();
+    let total_lost: u64 = app.hosts.iter().map(|h| h.lost).sum();
+    let total_sum: f64 = app.hosts.iter().map(|h| h.sum_ms).sum();
+    let overall_avg = if total_count > 0 {
+        total_sum / total_count as f64
+    } else {
+        0.0
+    };
+    let overall_loss = if total_count > 0 {
+        total_lost as f64 / total_count as f64 * 100.0
+    } else {
+        0.0
+    };
+
+    let status = Paragraph::new(Line::from(vec![
+        Span::styled(
+            format!(" ◈ {} ", cond.status),
+            Style::default()
+                .fg(cond.color)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            format!("— {} ", cond.hint),
+            Style::default().fg(cond.color),
+        ),
+        Span::raw("  "),
+        Span::styled(
+            format!("Avg: {:.1}ms", overall_avg),
+            Style::default().fg(theme::FOOTER_KEY),
+        ),
+        Span::raw("  "),
+        Span::styled(
+            format!("Loss: {:.1}%", overall_loss),
+            Style::default().fg(theme::FOOTER_KEY),
+        ),
+        Span::raw("  "),
+        Span::styled(
+            format!("Hosts: {}", app.hosts.len()),
+            Style::default().fg(theme::FOOTER_KEY),
+        ),
+    ]))
+    .style(Style::default().bg(theme::BG));
+
+    frame.render_widget(status, area);
 }
 
 fn render_chart(app: &AppState, frame: &mut Frame, area: Rect) {

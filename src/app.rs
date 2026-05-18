@@ -1,7 +1,14 @@
 use std::collections::VecDeque;
 use std::time::Duration;
 
+use ratatui::style::Color;
 use sysinfo::Networks;
+
+pub struct NetworkCondition {
+    pub status: &'static str,
+    pub hint: &'static str,
+    pub color: Color,
+}
 
 pub struct PingEvent {
     pub host: String,
@@ -215,6 +222,38 @@ impl AppState {
 
     pub fn on_tick(&mut self) {
         self.net.refresh(self.tick_interval.as_secs_f64());
+    }
+
+    pub fn network_condition(&self) -> NetworkCondition {
+        let total_count: u64 = self.hosts.iter().map(|h| h.count).sum();
+        if total_count == 0 {
+            return NetworkCondition {
+                status: "Waiting for data...",
+                hint: "",
+                color: crate::theme::FOOTER_KEY,
+            };
+        }
+
+        let total_lost: u64 = self.hosts.iter().map(|h| h.lost).sum();
+        let total_sum: f64 = self.hosts.iter().map(|h| h.sum_ms).sum();
+        let overall_avg = total_sum / total_count as f64;
+        let overall_loss = total_lost as f64 / total_count as f64 * 100.0;
+
+        if overall_avg < 20.0 && overall_loss == 0.0 {
+            NetworkCondition { status: "EXCELLENT", hint: "Ready for anything", color: Color::Rgb(80, 250, 123) }
+        } else if overall_avg < 50.0 && overall_loss == 0.0 {
+            NetworkCondition { status: "GREAT", hint: "Smooth for calls & gaming", color: Color::Rgb(80, 250, 123) }
+        } else if overall_avg < 100.0 && overall_loss < 1.0 {
+            NetworkCondition { status: "GOOD", hint: "Fine for video calls", color: Color::Rgb(241, 250, 140) }
+        } else if overall_avg < 150.0 && overall_loss < 3.0 {
+            NetworkCondition { status: "FAIR", hint: "OK for browsing, risky for calls", color: Color::Rgb(241, 250, 140) }
+        } else if overall_avg < 250.0 && overall_loss < 5.0 {
+            NetworkCondition { status: "POOR", hint: "Expect lag in everything", color: Color::Rgb(255, 184, 108) }
+        } else if overall_loss >= 10.0 {
+            NetworkCondition { status: "CRITICAL", hint: "Connection unstable", color: Color::Rgb(255, 85, 85) }
+        } else {
+            NetworkCondition { status: "BAD", hint: "Unusable for real-time", color: Color::Rgb(255, 85, 85) }
+        }
     }
 
     pub fn render(&mut self, frame: &mut ratatui::Frame) {
