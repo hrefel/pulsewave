@@ -11,7 +11,7 @@ pub struct PingEvent {
 pub enum PingResult {
     Ok { latency_ms: f64 },
     Timeout,
-    Error(String),
+    Error(#[allow(dead_code)] String),
 }
 
 pub struct HostState {
