@@ -1,0 +1,39 @@
+[package]
+name = "pulsewave"
+version = "0.1.0"
+edition = "2024"
+description = "Real-time multi-host ping monitor with cyberpunk TUI"
+license = "MIT"
+repository = "https://github.com/refel/pulsewave"
+keywords = ["ping", "tui", "network", "monitor", "cli"]
+categories = ["command-line-utilities", "network-programming"]
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+crossterm = "0.28"
+ratatui = "0.29"
+surge-ping = "0.8"
+sysinfo = "0.33"
+tokio = { version = "1", features = ["full"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[workspace.metadata.dist]
+cargo-dist-version = "0.28.0"
+ci = "github"
+installers = ["shell", "powershell", "homebrew"]
+targets = [
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+    "aarch64-unknown-linux-gnu",
+    "x86_64-pc-windows-msvc",
+]
+unix-archive = ".tar.gz"
+windows-archive = ".zip"
