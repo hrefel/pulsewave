@@ -35,7 +35,7 @@ pub fn render(app: &mut AppState, frame: &mut Frame) {
                 Constraint::Percentage(60),
                 Constraint::Percentage(40),
             ])
-            .split(main[1]);
+            .split(main[2]);
         render_chart(app, frame, body[0]);
         render_stats(app, frame, body[1]);
     } else {
